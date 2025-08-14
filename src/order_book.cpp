@@ -164,6 +164,7 @@ uint32_t OrderBook::execute_ioc_order(Side side, uint32_t price, uint32_t quanti
         uint32_t start_idx = buy_directory.find_lowest_bit(); // Start from best bid (highest price)
         while (remaining_qty > 0 && start_idx < MAX_PRICE_LEVELS) {
             uint32_t level_price = buy_index_to_price(start_idx);
+            // IOC logic: sell executes against buys at or above the limit price
             if (level_price < price) break; // Price too low
             
             PriceLevel& level = buy_levels[start_idx];
