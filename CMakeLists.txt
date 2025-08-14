@@ -70,3 +70,9 @@ install(TARGETS simd_lob test_bitset_directory test_order_book test_lob_engine r
 )
 
 install(DIRECTORY src/ DESTINATION include/simd_lob)
+
+# Add scalar implementation for benchmarking 
+option(BUILD_SCALAR_BASELINE "Build scalar baseline implementation" ON)
+if(BUILD_SCALAR_BASELINE)
+    add_subdirectory(bench/scalar)
+endif()
