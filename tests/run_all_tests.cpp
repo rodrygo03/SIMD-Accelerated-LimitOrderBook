@@ -26,15 +26,15 @@ int main() {
     }
 }
 
-// Test runner wrapper functions
+// TEST RUNNER FIX: executables are in build/ not build/tests/
 int run_bitset_directory_tests() {
-    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/tests/test_bitset_directory");
+    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/test_bitset_directory");
 }
 
 int run_order_book_tests() {
-    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/tests/test_order_book");
+    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/test_order_book");
 }
 
 int run_lob_engine_tests() {
-    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/tests/test_lob_engine");
+    return system("cd /home/rodrigoorozco/Desktop/SIMD-LOB && ./build/test_lob_engine");
 }
