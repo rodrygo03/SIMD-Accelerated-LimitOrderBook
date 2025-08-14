@@ -1,0 +1,221 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 16,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Development Build",
+            "description": "Standard development configuration with debug symbols and SIMD enabled",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "ON",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "10000",
+                "WARMUP_ITERATIONS": "1000"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release Build",
+            "description": "Optimized release build with SIMD enabled for production use",
+            "binaryDir": "${sourceDir}/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "10000",
+                "WARMUP_ITERATIONS": "1000"
+            }
+        },
+        {
+            "name": "benchmark",
+            "displayName": "Benchmark Configuration",
+            "description": "Optimized for performance benchmarking with both SIMD and scalar implementations",
+            "binaryDir": "${sourceDir}/build-benchmark",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "2000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "100000",
+                "WARMUP_ITERATIONS": "10000"
+            }
+        },
+        {
+            "name": "penny-stock",
+            "displayName": "Penny Stock Configuration",
+            "description": "Optimized for low-price penny stock trading (base price $1.00)",
+            "binaryDir": "${sourceDir}/build-penny",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "500000",
+                "TRADE_POOL_RATIO": "5",
+                "MAX_PRICE_LEVELS": "2048",
+                "BASE_PRICE": "100",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "5",
+                "BENCHMARK_ITERATIONS": "20000",
+                "WARMUP_ITERATIONS": "2000"
+            }
+        },
+        {
+            "name": "high-frequency",
+            "displayName": "High-Frequency Trading",
+            "description": "Maximum performance configuration for high-frequency trading",
+            "binaryDir": "${sourceDir}/build-hft",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SCALAR_BASELINE": "OFF",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "5000000",
+                "TRADE_POOL_RATIO": "20",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "20",
+                "BENCHMARK_ITERATIONS": "1000000",
+                "WARMUP_ITERATIONS": "50000"
+            }
+        },
+        {
+            "name": "memory-constrained",
+            "displayName": "Memory Constrained",
+            "description": "Configuration for systems with limited memory",
+            "binaryDir": "${sourceDir}/build-minimal",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "100000",
+                "TRADE_POOL_RATIO": "5",
+                "MAX_PRICE_LEVELS": "1024",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "5",
+                "BENCHMARK_ITERATIONS": "5000",
+                "WARMUP_ITERATIONS": "500"
+            }
+        },
+        {
+            "name": "testing",
+            "displayName": "Testing Configuration",
+            "description": "Configuration optimized for running unit tests with debugging enabled",
+            "binaryDir": "${sourceDir}/build-test",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SCALAR_BASELINE": "ON",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_DEBUG_MODE": "ON",
+                "ENABLE_VERBOSE_LOGGING": "ON",
+                "DEFAULT_POOL_SIZE": "100000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "1024",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "1000",
+                "WARMUP_ITERATIONS": "100"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "displayName": "Build Default",
+            "description": "Build the default development configuration"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release", 
+            "displayName": "Build Release",
+            "description": "Build the optimized release configuration"
+        },
+        {
+            "name": "benchmark",
+            "configurePreset": "benchmark",
+            "displayName": "Build Benchmark",
+            "description": "Build the benchmark configuration"
+        },
+        {
+            "name": "penny-stock",
+            "configurePreset": "penny-stock",
+            "displayName": "Build Penny Stock",
+            "description": "Build the penny stock configuration"
+        },
+        {
+            "name": "high-frequency",
+            "configurePreset": "high-frequency",
+            "displayName": "Build High-Frequency",
+            "description": "Build the high-frequency trading configuration"
+        },
+        {
+            "name": "memory-constrained",
+            "configurePreset": "memory-constrained",
+            "displayName": "Build Memory Constrained",
+            "description": "Build the memory constrained configuration"
+        },
+        {
+            "name": "testing",
+            "configurePreset": "testing",
+            "displayName": "Build Testing",
+            "description": "Build the testing configuration"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "displayName": "Test Default",
+            "description": "Run tests with default configuration"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "displayName": "Test Release", 
+            "description": "Run tests with release configuration"
+        },
+        {
+            "name": "testing",
+            "configurePreset": "testing",
+            "displayName": "Test All",
+            "description": "Run comprehensive tests with full debugging"
+        }
+    ]
+}

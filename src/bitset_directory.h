@@ -3,12 +3,15 @@
 #include <cstdint>
 #include <immintrin.h>  // AVX2/AVX-512 intrinsics
 
+#include "config.h"
+
 class BitsetDirectory {
     private:
-        static constexpr size_t L1_BITS = 64;     // 64-bit L1 bitset
-        static constexpr size_t L2_BITS = 64;     // 64-bit L2 bitsets
-        static constexpr size_t CHUNK_SIZE = 64;  // Price levels per L2 chunk
-        static constexpr size_t MAX_PRICE_LEVELS = L1_BITS * L2_BITS; // 4096 levels
+        // SIMD-optimized constants from config.h - DO NOT CHANGE without updating SIMD code
+        static constexpr size_t L1_BITS = Config::BitsetConfig::L1_BITS;
+        static constexpr size_t L2_BITS = Config::BitsetConfig::L2_BITS;
+        static constexpr size_t CHUNK_SIZE = Config::BitsetConfig::CHUNK_SIZE;
+        static constexpr size_t MAX_PRICE_LEVELS = Config::BitsetConfig::MAX_PRICE_LEVELS;
         
         uint64_t l1_bitset;           // Coarse-grain directory (which L2 chunks have data)
         uint64_t l2_bitset[L1_BITS];  // Fine-grain directory (which price levels have data)

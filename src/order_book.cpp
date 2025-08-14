@@ -4,7 +4,7 @@
 #include "order_book.h"
 
 OrderBook::OrderBook(size_t initial_pool_size): buy_directory(), sell_directory(), order_pool(initial_pool_size),
-  trade_pool(initial_pool_size / 10), // Cache optimization: fewer trades than orders typically
+  trade_pool(initial_pool_size / Config::get_trade_pool_ratio()),
   cached_best_bid_idx(0),
   cached_best_ask_idx(0),
   best_bid_valid(false),

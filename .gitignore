@@ -1,4 +1,11 @@
 # AI tools
 claude/
 
-build/
+build*/
+.env
+
+# scalar implementation test bin
+test_scalar 
+
+# cmake generated 
+config.h.in 

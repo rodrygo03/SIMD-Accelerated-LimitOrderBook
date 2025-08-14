@@ -34,7 +34,7 @@ class ScalarLOBEngine {
         bool record_history;
         
     public:
-        explicit ScalarLOBEngine(size_t initial_pool_size = 1000000);
+        explicit ScalarLOBEngine(size_t initial_pool_size = Config::DEFAULT_POOL_SIZE_CONFIG);
         ~ScalarLOBEngine() = default;
         
         // Core message processing - same interface as optimized version

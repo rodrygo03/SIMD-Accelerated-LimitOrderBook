@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../src/config.h"
 #include "../../src/order.h"
 #include <map>
 #include <list>
@@ -31,10 +32,10 @@ class ScalarOrderBook {
         uint64_t total_trades_executed; 
         uint64_t total_volume_traded;
         
-        // Constants matching the optimized version for fair comparison
-        static constexpr uint32_t MAX_PRICE_LEVELS = 4096;
-        static constexpr uint32_t MIN_PRICE_TICK = 1;
-        static constexpr uint32_t BASE_PRICE = 50000; // Base price (e.g., $500.00 in cents)
+        // Constants from config.h - same as optimized version for fair comparison
+        static constexpr uint32_t MAX_PRICE_LEVELS = Config::BitsetConfig::MAX_PRICE_LEVELS;
+        static constexpr uint32_t MIN_PRICE_TICK = Config::MIN_PRICE_TICK_CONFIG;
+        static constexpr uint32_t BASE_PRICE = Config::BASE_PRICE_CONFIG;
         
     public:
         ScalarOrderBook();

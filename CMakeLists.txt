@@ -5,13 +5,84 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ============================================================================
+# BUILD CONFIGURATION OPTIONS
+# ============================================================================
+
+# Build options
+option(BUILD_SCALAR_BASELINE "Build scalar baseline implementation for benchmarking" ON)
+option(ENABLE_SIMD "Enable SIMD optimizations (AVX2)" ON)
+option(ENABLE_DEBUG_MODE "Enable debug mode and logging" OFF)
+option(ENABLE_VERBOSE_LOGGING "Enable verbose logging output" OFF)
+
+# Pool configuration
+set(DEFAULT_POOL_SIZE "1000000" CACHE STRING "Default object pool size")
+set(TRADE_POOL_RATIO "10" CACHE STRING "Trade pool size ratio (orders/trades)")
+
+# Order book configuration  
+set(MAX_PRICE_LEVELS "4096" CACHE STRING "Maximum price levels (up to 4096 for SIMD)")
+set(BASE_PRICE "50000" CACHE STRING "Base price in cents (e.g., 50000 = $500.00)")
+set(MIN_PRICE_TICK "1" CACHE STRING "Minimum price increment")
+set(MAX_MARKET_DEPTH_LEVELS "10" CACHE STRING "Default market depth query levels")
+
+# Benchmark configuration
+set(BENCHMARK_ITERATIONS "10000" CACHE STRING "Default benchmark iterations")
+set(WARMUP_ITERATIONS "1000" CACHE STRING "Benchmark warmup iterations")
+
+# ============================================================================
+# CONFIGURATION VALIDATION
+# ============================================================================
+
+# Validate pool sizes
+if(DEFAULT_POOL_SIZE LESS 1000)
+    message(FATAL_ERROR "DEFAULT_POOL_SIZE must be at least 1000")
+endif()
+
+if(TRADE_POOL_RATIO LESS 1)
+    message(FATAL_ERROR "TRADE_POOL_RATIO must be at least 1")
+endif()
+
+# Validate price configuration
+if(MAX_PRICE_LEVELS GREATER 4096)
+    message(FATAL_ERROR "MAX_PRICE_LEVELS cannot exceed 4096 (SIMD bitset directory limit)")
+endif()
+
+if(BASE_PRICE LESS 1)
+    message(FATAL_ERROR "BASE_PRICE must be positive")
+endif()
+
+if(MIN_PRICE_TICK LESS 1)
+    message(FATAL_ERROR "MIN_PRICE_TICK must be positive")
+endif()
+
+# Validate benchmark settings
+if(BENCHMARK_ITERATIONS LESS 100)
+    message(FATAL_ERROR "BENCHMARK_ITERATIONS must be at least 100")
+endif()
+
+# Display configuration
+message(STATUS "SIMD-LOB Build Configuration:")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  SIMD Enabled: ${ENABLE_SIMD}")
+message(STATUS "  Scalar Baseline: ${BUILD_SCALAR_BASELINE}")
+message(STATUS "  Pool Size: ${DEFAULT_POOL_SIZE}")
+message(STATUS "  Base Price: ${BASE_PRICE} cents ($${CMAKE_MATCH_0})")
+message(STATUS "  Max Price Levels: ${MAX_PRICE_LEVELS}")
+message(STATUS "  Debug Mode: ${ENABLE_DEBUG_MODE}")
+
+# ============================================================================
+# COMPILER CONFIGURATION
+# ============================================================================
+
 # Compiler-specific optimizations
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -fsanitize=address,undefined")
     
-    # Enable SIMD intrinsics
-    add_compile_options(-mavx2 -mfma -mbmi2)
+    # Enable SIMD intrinsics if requested
+    if(ENABLE_SIMD)
+        add_compile_options(-mavx2 -mfma -mbmi2)
+    endif()
     
     # Performance-oriented flags
     add_compile_options(
@@ -23,6 +94,29 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
         -fprefetch-loop-arrays
     )
 endif()
+
+# ============================================================================
+# CONFIGURATION HEADER GENERATION
+# ============================================================================
+
+# Set preprocessor definitions for config.h template
+if(ENABLE_DEBUG_MODE)
+    set(SIMD_LOB_DEBUG 1)
+endif()
+
+if(ENABLE_VERBOSE_LOGGING)
+    set(VERBOSE_LOGGING 1)
+endif()
+
+# Generate config.h from template
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/config.h"
+    @ONLY
+)
+
+# Make generated config.h available to all targets
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
 include_directories(src)
 

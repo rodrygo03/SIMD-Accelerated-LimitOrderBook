@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "price_level.h"
 #include "object_pool.hpp"
 
@@ -12,9 +13,10 @@
 
 class OrderBook {
     private:
-        static constexpr uint32_t MAX_PRICE_LEVELS = 4096;
-        static constexpr uint32_t MIN_PRICE_TICK = 1;  // Minimum price increment
-        static constexpr uint32_t BASE_PRICE = 50000;  // Base price (e.g., $500.00 in cents) 
+        // Configuration from config.h - environment configurable
+        static constexpr uint32_t MAX_PRICE_LEVELS = Config::BitsetConfig::MAX_PRICE_LEVELS;
+        static constexpr uint32_t MIN_PRICE_TICK = Config::MIN_PRICE_TICK_CONFIG;
+        static constexpr uint32_t BASE_PRICE = Config::BASE_PRICE_CONFIG; 
         
         // Cache optimization: 64-byte aligned arrays for cache line efficiency
         alignas(64) PriceLevel buy_levels[MAX_PRICE_LEVELS];   
@@ -39,7 +41,7 @@ class OrderBook {
         uint64_t total_volume_traded;
         
     public:
-        explicit OrderBook(size_t initial_pool_size = 1000000); // *Make 1000000 a macro ?
+        explicit OrderBook(size_t initial_pool_size = Config::DEFAULT_POOL_SIZE_CONFIG);
         ~OrderBook() = default;
 
         // Core order operations

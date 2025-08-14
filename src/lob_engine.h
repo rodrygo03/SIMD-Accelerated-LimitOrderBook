@@ -7,6 +7,8 @@
 #include <fstream>
 
 #include "order_book.h"
+#include "config.h"
+
 
 enum class MessageType : uint8_t {
     ADD_ORDER = 'A',
@@ -49,7 +51,7 @@ class LOBEngine {
         bool record_history;
         
     public:
-        explicit LOBEngine(size_t initial_pool_size = 1000000);
+        explicit LOBEngine(size_t initial_pool_size = Config::DEFAULT_POOL_SIZE_CONFIG);
         ~LOBEngine() = default;
         
         // Core message processing
