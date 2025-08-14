@@ -34,9 +34,8 @@ uint32_t BitsetDirectory::find_highest_bit() const {
     
     // Find highest set bit in L1 using intrinsics (x86: LZCNT, ARM: CLZ) - O(1) 
     int highest_l1 = 63 - __builtin_clzll(l1_bitset);
-
-    // Search from highest L1 chunk downward
-    for (size_t i=highest_l1; i>=0; i--) {
+    
+    for (int i=highest_l1; i>=0; i--) {
         uint64_t l2_chunk = l2_bitset[i];
         if (l2_chunk != 0) {
             int highest_l2 = 63 - __builtin_clzll(l2_chunk); // Find highest bit in this L2 chunk 
@@ -77,10 +76,14 @@ uint32_t BitsetDirectory::find_next_higher_bit(uint32_t from_index) const {
 
     // *Check current chunk for higher bits*
     uint64_t current_l2 = l2_bitset[l1_index];
-    // filter out current bit and all lower bits in the same L2 chunk: 
-    uint64_t mask = ~((1ULL << (l2_bit + 1)) - 1); // Subtract 1 to get all ones below that bit position:
-      // Bitwise NOT flips the bits -> zeros all positions ≤ l2_bit and ones all positions > l2_bit            
-      // AND-ing with the mask clears all bits at or below the current position, leaving only candidates that are higher
+    // BIT SHIFT OVERFLOW FIX: 1ULL << 64 is undefined behavior, was causing infinite loops
+    // when bit position = 63, need to check for this edge case
+    uint64_t mask;
+    if (l2_bit >= 63) {
+        mask = 0; // No higher bits possible in this chunk
+    } else {
+        mask = ~((1ULL << (l2_bit + 1)) - 1);
+    }
     uint64_t masked_chunk = current_l2 & mask;
     if (masked_chunk != 0) {
             int next_bit = __builtin_ctzll(masked_chunk);

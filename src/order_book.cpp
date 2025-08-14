@@ -55,7 +55,7 @@ bool OrderBook::add_limit_order(uint64_t order_id, Side side, uint32_t price, ui
     return true;
 }
 
-bool OrderBook::cancel_order(uint64_t order_id, uint64_t timestamp) {
+bool OrderBook::cancel_order(uint64_t order_id) {
     auto it = order_map.find(order_id);
     if (it == order_map.end()) {
         return false;
@@ -79,7 +79,10 @@ bool OrderBook::modify_order(uint64_t order_id, uint32_t new_price, uint32_t new
     Order* order = it->second;
     Side side = order->side;
     
-    cancel_order(order_id, timestamp);
+    bool cancel_success = cancel_order(order_id);
+    if (!cancel_success) {
+        return false;
+    }
     return add_limit_order(order_id, side, new_price, new_quantity, timestamp);
 }
 
@@ -105,8 +108,8 @@ uint32_t OrderBook::execute_market_order(Side side, uint32_t quantity, uint64_t 
             start_idx = sell_directory.find_next_higher_bit(start_idx);
         }
     } else {
-        // Sell market order executes against buy levels (descending price)
-        uint32_t start_idx = buy_directory.find_highest_bit();
+        // Sell market order executes against buy levels (highest price first)
+        uint32_t start_idx = buy_directory.find_lowest_bit(); // Start from lowest index (highest price)
         while (remaining_qty>0 && start_idx<MAX_PRICE_LEVELS) {
             PriceLevel& level = buy_levels[start_idx];
             if (level.has_orders()) {
@@ -119,7 +122,7 @@ uint32_t OrderBook::execute_market_order(Side side, uint32_t quantity, uint64_t 
                     buy_directory.clear_bit(start_idx);
                 }
             }
-            start_idx = buy_directory.find_next_lower_bit(start_idx);
+            start_idx = buy_directory.find_next_higher_bit(start_idx); // Move to lower price
         }
     }
 
@@ -157,8 +160,8 @@ uint32_t OrderBook::execute_ioc_order(Side side, uint32_t price, uint32_t quanti
         }
     } 
     else {
-        // IOC sell executes against buys at or above the limit price
-        uint32_t start_idx = buy_directory.find_highest_bit();
+        // IOC sell executes against buys at or above the limit price  
+        uint32_t start_idx = buy_directory.find_lowest_bit(); // Start from best bid (highest price)
         while (remaining_qty > 0 && start_idx < MAX_PRICE_LEVELS) {
             uint32_t level_price = buy_index_to_price(start_idx);
             if (level_price < price) break; // Price too low
@@ -174,7 +177,7 @@ uint32_t OrderBook::execute_ioc_order(Side side, uint32_t price, uint32_t quanti
                     buy_directory.clear_bit(start_idx);
                 }
             }
-            start_idx = buy_directory.find_next_lower_bit(start_idx);
+            start_idx = buy_directory.find_next_higher_bit(start_idx); // Move to lower price
         }
     }
 
@@ -265,8 +268,8 @@ void OrderBook::get_market_depth(uint32_t levels,
     bids.reserve(levels);
     asks.reserve(levels);
 
-    // Get bid levels (highest to lowest)
-    uint32_t bid_idx = buy_directory.find_highest_bit();
+    // Get bid levels (highest to lowest price)
+    uint32_t bid_idx = buy_directory.find_lowest_bit(); // Start from lowest index (highest price)
     uint32_t bid_count = 0;
     while (bid_idx < MAX_PRICE_LEVELS && bid_count < levels) {
         const PriceLevel& level = buy_levels[bid_idx];
@@ -274,7 +277,7 @@ void OrderBook::get_market_depth(uint32_t levels,
             bids.emplace_back(level.get_price(), level.get_total_quantity());
             bid_count++;
         }
-        bid_idx = buy_directory.find_next_lower_bit(bid_idx);
+        bid_idx = buy_directory.find_next_higher_bit(bid_idx); // Move to higher index (lower price)
     }
 
     // Get ask levels (lowest to highest)
@@ -343,20 +346,27 @@ void OrderBook::reset_statistics() {
 
 // Price conversion methods - implement ladder mapping
 uint32_t OrderBook::price_to_buy_index(uint32_t price) const {
-    // Higher prices get lower indices (best bid at index 0)
-    return (BASE_PRICE + MAX_PRICE_LEVELS * MIN_PRICE_TICK - price) / MIN_PRICE_TICK;
+    // SEGFAULT FIX: was returning idx 4096 for price 50000, writing out of bounds
+    // now properly maps prices around BASE_PRICE with boundary checks
+    if (price > BASE_PRICE + (MAX_PRICE_LEVELS/2 - 1) * MIN_PRICE_TICK) return 0;
+    if (price < BASE_PRICE - (MAX_PRICE_LEVELS/2) * MIN_PRICE_TICK) return MAX_PRICE_LEVELS - 1;
+    return (BASE_PRICE + (MAX_PRICE_LEVELS/2 - 1) * MIN_PRICE_TICK - price) / MIN_PRICE_TICK;
 }
 
 uint32_t OrderBook::price_to_sell_index(uint32_t price) const {
     // Lower prices get lower indices (best ask at index 0)
+    if (price < BASE_PRICE) return 0;
+    if (price >= BASE_PRICE + MAX_PRICE_LEVELS * MIN_PRICE_TICK) return MAX_PRICE_LEVELS - 1;
     return (price - BASE_PRICE) / MIN_PRICE_TICK;
 }
 
 uint32_t OrderBook::buy_index_to_price(uint32_t index) const {
-    return BASE_PRICE + MAX_PRICE_LEVELS * MIN_PRICE_TICK - (index * MIN_PRICE_TICK);
+    if (index >= MAX_PRICE_LEVELS) return 0;
+    return BASE_PRICE + (MAX_PRICE_LEVELS/2 - 1) * MIN_PRICE_TICK - (index * MIN_PRICE_TICK);
 }
 
 uint32_t OrderBook::sell_index_to_price(uint32_t index) const {
+    if (index >= MAX_PRICE_LEVELS) return UINT32_MAX;
     return BASE_PRICE + (index * MIN_PRICE_TICK);
 }
 
@@ -367,8 +377,9 @@ void OrderBook::invalidate_best_prices() {
 }
 
 void OrderBook::refresh_best_bid_cache() const {
-    // Compute and cache best bid index using SIMD bitset
-    cached_best_bid_idx = buy_directory.find_highest_bit();
+    // BID/ASK DIRECTION FIX: was using find_highest_bit() which is wrong!
+    // for buys: higher prices = lower indices, so need find_lowest_bit() for best bid
+    cached_best_bid_idx = buy_directory.find_lowest_bit();
     best_bid_valid = true;
 }
 

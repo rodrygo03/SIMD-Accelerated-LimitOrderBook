@@ -1,7 +1,8 @@
-#include "lob_engine.h"
 #include <chrono>
 #include <fstream>
 #include <immintrin.h>
+
+#include "lob_engine.h"
 
 LOBEngine::LOBEngine(size_t initial_pool_size): order_book(std::make_unique<OrderBook>(initial_pool_size)),
   messages_processed(0),
@@ -30,7 +31,7 @@ bool LOBEngine::process_message(const OrderMessage& msg) {
             break;
             
         case MessageType::CANCEL_ORDER:
-            success = order_book->cancel_order(msg.order_id, msg.timestamp);
+            success = order_book->cancel_order(msg.order_id);
             if (success && order_callback) {
                 Order temp_order(msg.order_id, 0, 0, msg.side, OrderType::LIMIT, msg.timestamp);
                 notify_order_event(temp_order, "cancelled");

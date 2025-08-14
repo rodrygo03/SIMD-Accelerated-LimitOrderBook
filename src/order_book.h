@@ -1,7 +1,7 @@
 #pragma once
 
-#include "price_level.hpp"
-#include "object_pool.hpp"
+#include "price_level.h"
+#include "object_pool.h"
 
 #include <unordered_map>
 #include <vector>
@@ -44,7 +44,7 @@ class OrderBook {
 
         // Core order operations
         bool add_limit_order(uint64_t order_id, Side side, uint32_t price, uint32_t quantity, uint64_t timestamp);
-        bool cancel_order(uint64_t order_id, uint64_t timestamp);
+        bool cancel_order(uint64_t order_id);
         bool modify_order(uint64_t order_id, uint32_t new_price, uint32_t new_quantity, uint64_t timestamp);
         uint32_t execute_market_order(Side side, uint32_t quantity, uint64_t timestamp, std::vector<Trade>& trades);  
         uint32_t execute_ioc_order(Side side, uint32_t price, uint32_t quantity, uint64_t timestamp, std::vector<Trade>& trades);
