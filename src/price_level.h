@@ -4,21 +4,25 @@
 #include <vector>
 #include <cstdint>
 
-class PriceLevel {
+class PriceLevel {    // intrusive queue 
     private:
-        Order* head_order;      // FIFO queue head
-        Order* tail_order;      // FIFO queue tail
+        Order* head_order;      
+        Order* tail_order;      
         uint32_t price;         // Price of this level
         uint32_t total_quantity; // Total quantity at this level
         uint32_t order_count;   // Number of orders
 
     public:
         PriceLevel();
+        explicit PriceLevel(uint32_t p);
         ~PriceLevel() = default;
 
         void add_order(Order* order);
         void remove_order(Order* order);
         uint32_t execute_orders(uint32_t quantity, std::vector<Trade>& trades, uint64_t timestamp);
+        
+        // Direct access
+        Order* get_front_order() const { return head_order; }
         
         void clear();
         bool is_empty() const { return head_order == nullptr; }

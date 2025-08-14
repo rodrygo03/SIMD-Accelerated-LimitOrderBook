@@ -2,68 +2,78 @@
 
 PriceLevel::PriceLevel() : head_order(nullptr), tail_order(nullptr), price(0), total_quantity(0), order_count(0) {}
 
+PriceLevel::PriceLevel(uint32_t p) : head_order(nullptr), tail_order(nullptr), price(p), total_quantity(0), order_count(0) {}
+
 void PriceLevel::add_order(Order* order) {
     if (!order) return;
     
-    order->prev = tail_order;
+    // Optimized singly-linked list insertion
     order->next = nullptr;
+    order->prev = nullptr;  // Keep for compatibility but don't use
     
-    if (tail_order) {
-        tail_order->next = order;
-    } else {
+    if (head_order == nullptr) {
         head_order = order;
+        tail_order = order;
+    } else {
+        tail_order->next = order;
+        tail_order = order;
     }
-    tail_order = order;
     
     total_quantity += order->quantity;
     order_count++;
 }
 
 void PriceLevel::remove_order(Order* order) {
-    if (!order) return;
+    if (!order || head_order == nullptr) return;
     
-    if (order->prev) {
-        order->prev->next = order->next;
-    } else {
-        head_order = order->next;
+    // Optimized removal for singly-linked list
+    if (head_order == order) {
+        head_order = head_order->next;
+        if (head_order == nullptr) tail_order = nullptr;
+        total_quantity -= order->quantity;
+        order_count--;
+        return;
     }
-    
-    if (order->next) {
-        order->next->prev = order->prev;
-    } else {
-        tail_order = order->prev;
+
+    Order* curr = head_order;
+    while (curr->next != nullptr) {
+        if (curr->next == order) {
+            curr->next = order->next;
+            if (curr->next == nullptr) tail_order = curr; // Removed last order
+            total_quantity -= order->quantity;
+            order_count--;
+            return;
+        }
+        curr = curr->next;
     }
-    
-    total_quantity -= order->quantity;
-    order_count--;
 }
 
 uint32_t PriceLevel::execute_orders(uint32_t quantity, std::vector<Trade>& trades, uint64_t timestamp) {
-    uint32_t filled = 0;
-    
-    while (head_order && filled < quantity) {
-        uint32_t fill_qty = std::min(quantity - filled, head_order->quantity);
-        
-        Trade trade(0, head_order->order_id, price, fill_qty, timestamp);
-        trades.push_back(trade);
-        
-        head_order->quantity -= fill_qty;
-        total_quantity -= fill_qty;
-        filled += fill_qty;
-        
-        if (head_order->quantity == 0) {
-            Order* completed_order = head_order;
+    if (head_order == nullptr) return 0;
+
+    uint32_t total_executed = 0;
+
+    while (head_order != nullptr && quantity > 0) {
+        uint32_t exec_qty = head_order->fill(quantity);
+        total_executed += exec_qty;
+        quantity -= exec_qty;
+        total_quantity -= exec_qty;
+
+        if (exec_qty > 0) {
+            trades.emplace_back(head_order->order_id, head_order->order_id, price, exec_qty, timestamp);
+        }
+
+        if (head_order->is_filled()) {
+            // Remove completed order from head
             head_order = head_order->next;
-            if (head_order) {
-                head_order->prev = nullptr;
-            } else {
+            if (head_order == nullptr) {
                 tail_order = nullptr;
             }
             order_count--;
         }
     }
-    
-    return filled;
+
+    return total_executed;
 }
 
 void PriceLevel::clear() {
