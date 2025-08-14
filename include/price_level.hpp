@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <vector>
 
@@ -94,7 +95,6 @@ class PriceLevel {    // intrusive queue
         order_count = 0;
     }
     
-    // TODO: Validate FIFO queue integrity (debugging)
     bool validate_integrity() const {
         if (head == nullptr && tail == nullptr) return true; 
         if (head == nullptr || tail == nullptr) return false; 

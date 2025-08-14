@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <immintrin.h>  // AVX2/AVX-512 intrinsics
 
