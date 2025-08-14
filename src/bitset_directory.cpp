@@ -140,18 +140,24 @@ void BitsetDirectory::clear_all() {
     } 
 }
 
-uint32_t BitsetDirectory::simd_scan_l2_forward(uint32_t start_chunk) const {
+uint32_t BitsetDirectory::simd_scan_l2_forward(uint32_t start_index) const {
+    // parameter is bit index, need to convert to chunk index
+    uint32_t start_chunk = get_l1_index(start_index);
     uint32_t vec_size = 4; // 256 bit load / 64 bit lane
     for (uint32_t i=start_chunk; i<L1_BITS; i+=vec_size) {
         __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[i]); // Unaligned load 4 consecutive L2 bitsets into AVX2 register (x86-64 CISC ISA)
         __m256i cmp_result = _mm256_cmpeq_epi64(vec, _mm256_setzero_si256()); // Check for non-zero lanes: 0xFFFF...F if lane equals zero
         int32_t mask = _mm256_movemask_epi8(cmp_result); // MSB of each byte -> 32-bit mask
 
-        if (mask != 0xFFFFFFFF) { // At least one lane is non-zero (has data)
+        if (mask != (int32_t)0xFFFFFFFF) { // At least one lane is non-zero (has data)
             for (uint32_t j=0; j<vec_size; j++) { // FWD
                 if (i+j < L1_BITS && l2_bitset[i+j] != 0) {
-                    int first_bit = __builtin_ctzll(l2_bitset[i+j]); // Lowest bit 
-                    return (i + j) * CHUNK_SIZE + first_bit;
+                    int first_bit = __builtin_ctzll(l2_bitset[i+j]); // Lowest bit
+                    uint32_t found_index = (i + j) * CHUNK_SIZE + first_bit;
+                    // Only return if found bit is after start_index
+                    if (found_index > start_index) {
+                        return found_index;
+                    }
                 }
             }
         }
@@ -160,19 +166,24 @@ uint32_t BitsetDirectory::simd_scan_l2_forward(uint32_t start_chunk) const {
     return MAX_PRICE_LEVELS;
 }
 
-uint32_t BitsetDirectory::simd_scan_l2_backward(uint32_t start_chunk) const {
+uint32_t BitsetDirectory::simd_scan_l2_backward(uint32_t start_index) const {
+    uint32_t start_chunk = get_l1_index(start_index);
     uint32_t vec_size = 4;
     for (uint32_t i=(start_chunk/vec_size)*vec_size; i!=UINT32_MAX; i-=vec_size) { // rounds down to the nearest multiple of 4
         __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[i]); 
         __m256i cmp_result = _mm256_cmpeq_epi64(vec, _mm256_setzero_si256());
-        int mask = _mm256_movemask_epi8(cmp_result);
+        int32_t mask = _mm256_movemask_epi8(cmp_result);
 
-        if (mask != 0xFFFFFFFF) { 
+        if (mask != (int32_t)0xFFFFFFFF) { 
             for (uint32_t j=vec_size-1; j!=UINT32_MAX; j--) {
                 uint32_t chunk_idx = i + j;
                 if (chunk_idx <= start_chunk && chunk_idx < L1_BITS && l2_bitset[chunk_idx] != 0) {
                     int last_bit = 63 - __builtin_clzll(l2_bitset[chunk_idx]); // Highest bit
-                    return chunk_idx * CHUNK_SIZE + last_bit;
+                    uint32_t found_index = chunk_idx * CHUNK_SIZE + last_bit;
+                    // only return bits before start_index
+                    if (found_index < start_index) {
+                        return found_index;
+                    }
                 }
             }
         }
