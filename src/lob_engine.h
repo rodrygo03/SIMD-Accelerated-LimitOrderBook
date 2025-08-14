@@ -36,7 +36,7 @@ using OrderCallback = std::function<void(const Order&, const char* event)>;
 
 class LOBEngine {
     private:
-        std::unique_ptr<OrderBook> order_book; // unique_ptr for RAII 
+        std::unique_ptr<OrderBook<OptimizationConfig::DefaultConfig>> order_book; // unique_ptr for RAII 
         
         // Event callbacks
         TradeCallback trade_callback;

@@ -4,7 +4,7 @@
 
 #include "lob_engine.h"
 
-LOBEngine::LOBEngine(size_t initial_pool_size): order_book(std::make_unique<OrderBook>(initial_pool_size)),
+LOBEngine::LOBEngine(size_t initial_pool_size): order_book(std::make_unique<OrderBook<OptimizationConfig::DefaultConfig>>(initial_pool_size)),
   messages_processed(0),
   processing_time_ns(0),
   record_history(false) {

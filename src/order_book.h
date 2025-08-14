@@ -1,29 +1,32 @@
 #pragma once
 
 #include "config.h"
+#include "optimization_config.h"
 #include "price_level.h"
 #include "object_pool.hpp"
 
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <type_traits>
 
 #include "bitset_directory.h"
 #include "order.h"
 
+template<typename Config = OptimizationConfig::DefaultConfig>
 class OrderBook {
     private:
         // Configuration from config.h - environment configurable
-        static constexpr uint32_t MAX_PRICE_LEVELS = Config::BitsetConfig::MAX_PRICE_LEVELS;
-        static constexpr uint32_t MIN_PRICE_TICK = Config::MIN_PRICE_TICK_CONFIG;
-        static constexpr uint32_t BASE_PRICE = Config::BASE_PRICE_CONFIG; 
+        static constexpr uint32_t MAX_PRICE_LEVELS = ::Config::BitsetConfig::MAX_PRICE_LEVELS;
+        static constexpr uint32_t MIN_PRICE_TICK = ::Config::MIN_PRICE_TICK_CONFIG;
+        static constexpr uint32_t BASE_PRICE = ::Config::BASE_PRICE_CONFIG; 
         
         // Cache optimization: 64-byte aligned arrays for cache line efficiency
-        alignas(64) PriceLevel buy_levels[MAX_PRICE_LEVELS];   
-        alignas(64) PriceLevel sell_levels[MAX_PRICE_LEVELS]; 
+        alignas(Config::USE_CACHE_OPTIMIZATION ? 64 : alignof(PriceLevel)) PriceLevel buy_levels[MAX_PRICE_LEVELS];   
+        alignas(Config::USE_CACHE_OPTIMIZATION ? 64 : alignof(PriceLevel)) PriceLevel sell_levels[MAX_PRICE_LEVELS]; 
         
-        BitsetDirectory buy_directory;   // Tracks which buy levels have orders
-        BitsetDirectory sell_directory;  // Tracks which sell levels have orders
+        BitsetDirectory<Config> buy_directory;   
+        BitsetDirectory<Config> sell_directory;
         
         OrderPool order_pool;
         TradePool trade_pool;
@@ -31,8 +34,8 @@ class OrderBook {
         std::unordered_map<uint64_t, Order*> order_map; // Order ID to Order* mapping for O(1) cancel/modify
         
         // Cached best price indices to avoid repeated SIMD scans
-        mutable uint32_t cached_best_bid_idx;   // Cached best bid index
-        mutable uint32_t cached_best_ask_idx;   // Cached best ask index
+        mutable uint32_t cached_best_bid_idx;
+        mutable uint32_t cached_best_ask_idx;
         mutable bool best_bid_valid;            // Cache validity flag for bid
         mutable bool best_ask_valid;            // Cache validity flag for ask
         
@@ -41,7 +44,7 @@ class OrderBook {
         uint64_t total_volume_traded;
         
     public:
-        explicit OrderBook(size_t initial_pool_size = Config::DEFAULT_POOL_SIZE_CONFIG);
+        explicit OrderBook(size_t initial_pool_size = ::Config::DEFAULT_POOL_SIZE_CONFIG);
         ~OrderBook() = default;
 
         // Core order operations
@@ -92,3 +95,18 @@ class OrderBook {
         void remove_order_from_level(Order* order, Side side);
         void prefetch_price_levels(Side side, uint32_t start_index, uint32_t count) const; // Hardware cache prefetching
 };
+
+// ============================================================================
+// TYPE ALIASES FOR COMMON CONFIGURATIONS
+// ============================================================================
+
+// Main OrderBook type - uses configuration selected by CMake
+using OrderBookDefault = OrderBook<OptimizationConfig::DefaultConfig>;
+
+// Specific configuration aliases for benchmarking
+using FullyOptimizedOrderBook = OrderBook<OptimizationConfig::FullyOptimizedConfig>;
+using ScalarBaselineOrderBook = OrderBook<OptimizationConfig::ScalarBaselineConfig>;
+using SimdOnlyOrderBook = OrderBook<OptimizationConfig::SimdOnlyConfig>;
+using MemoryOptimizedOrderBook = OrderBook<OptimizationConfig::MemoryOptimizedConfig>;
+using CacheOptimizedOrderBook = OrderBook<OptimizationConfig::CacheOptimizedConfig>;
+using ObjectPoolOnlyOrderBook = OrderBook<OptimizationConfig::ObjectPoolOnlyConfig>;

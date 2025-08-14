@@ -13,7 +13,6 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "ON",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -34,7 +33,6 @@
             "binaryDir": "${sourceDir}/build-release",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "OFF",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -55,7 +53,6 @@
             "binaryDir": "${sourceDir}/build-benchmark",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "OFF",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -76,7 +73,6 @@
             "binaryDir": "${sourceDir}/build-penny",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "OFF",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -97,7 +93,6 @@
             "binaryDir": "${sourceDir}/build-hft",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_SCALAR_BASELINE": "OFF",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "OFF",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -118,7 +113,6 @@
             "binaryDir": "${sourceDir}/build-minimal",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "OFF",
                 "ENABLE_VERBOSE_LOGGING": "OFF",
@@ -139,7 +133,6 @@
             "binaryDir": "${sourceDir}/build-test",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "BUILD_SCALAR_BASELINE": "ON",
                 "ENABLE_SIMD": "ON",
                 "ENABLE_DEBUG_MODE": "ON",
                 "ENABLE_VERBOSE_LOGGING": "ON",
@@ -151,6 +144,156 @@
                 "MAX_MARKET_DEPTH_LEVELS": "10",
                 "BENCHMARK_ITERATIONS": "1000",
                 "WARMUP_ITERATIONS": "100"
+            }
+        },
+        {
+            "name": "scalar-baseline",
+            "displayName": "Scalar Baseline",
+            "description": "Pure STL baseline implementation with no optimizations",
+            "binaryDir": "${sourceDir}/build-scalar-baseline",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "OFF",
+                "ENABLE_OBJECT_POOLING": "OFF",
+                "ENABLE_CACHE_OPTIMIZATION": "OFF",
+                "ENABLE_INTRUSIVE_LISTS": "OFF",
+                "ENABLE_PREFETCHING": "OFF",
+                "ENABLE_BRANCH_PREDICTION": "OFF",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
+            "name": "simd-only",
+            "displayName": "SIMD Only",
+            "description": "Only SIMD optimizations enabled, no memory pooling or cache optimization",
+            "binaryDir": "${sourceDir}/build-simd-only",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_OBJECT_POOLING": "OFF",
+                "ENABLE_CACHE_OPTIMIZATION": "OFF",
+                "ENABLE_INTRUSIVE_LISTS": "OFF",
+                "ENABLE_PREFETCHING": "OFF",
+                "ENABLE_BRANCH_PREDICTION": "OFF",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
+            "name": "memory-optimized",
+            "displayName": "Memory Optimized",
+            "description": "Memory optimizations without SIMD - object pooling, cache optimization, intrusive lists",
+            "binaryDir": "${sourceDir}/build-memory-optimized",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "OFF",
+                "ENABLE_OBJECT_POOLING": "ON",
+                "ENABLE_CACHE_OPTIMIZATION": "ON",
+                "ENABLE_INTRUSIVE_LISTS": "ON",
+                "ENABLE_PREFETCHING": "ON",
+                "ENABLE_BRANCH_PREDICTION": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
+            "name": "cache-only",
+            "displayName": "Cache Optimized Only",
+            "description": "Only cache-friendly data structures and alignment optimizations",
+            "binaryDir": "${sourceDir}/build-cache-only",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "OFF",
+                "ENABLE_OBJECT_POOLING": "OFF",
+                "ENABLE_CACHE_OPTIMIZATION": "ON",
+                "ENABLE_INTRUSIVE_LISTS": "OFF",
+                "ENABLE_PREFETCHING": "ON",
+                "ENABLE_BRANCH_PREDICTION": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
+            "name": "object-pool-only",
+            "displayName": "Object Pool Only",
+            "description": "Only object pooling optimization enabled",
+            "binaryDir": "${sourceDir}/build-object-pool-only",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "OFF",
+                "ENABLE_OBJECT_POOLING": "ON",
+                "ENABLE_CACHE_OPTIMIZATION": "OFF",
+                "ENABLE_INTRUSIVE_LISTS": "OFF",
+                "ENABLE_PREFETCHING": "OFF",
+                "ENABLE_BRANCH_PREDICTION": "OFF",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
+            "name": "fully-optimized",
+            "displayName": "Fully Optimized",
+            "description": "All optimizations enabled - SIMD, object pooling, cache optimization, intrusive lists",
+            "binaryDir": "${sourceDir}/build-fully-optimized",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_OBJECT_POOLING": "ON",
+                "ENABLE_CACHE_OPTIMIZATION": "ON",
+                "ENABLE_INTRUSIVE_LISTS": "ON",
+                "ENABLE_PREFETCHING": "ON",
+                "ENABLE_BRANCH_PREDICTION": "ON",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "2000000",
+                "TRADE_POOL_RATIO": "15",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "100000",
+                "WARMUP_ITERATIONS": "10000"
             }
         }
     ],
@@ -196,6 +339,42 @@
             "configurePreset": "testing",
             "displayName": "Build Testing",
             "description": "Build the testing configuration"
+        },
+        {
+            "name": "scalar-baseline",
+            "configurePreset": "scalar-baseline",
+            "displayName": "Build Scalar Baseline",
+            "description": "Build pure STL baseline without optimizations"
+        },
+        {
+            "name": "simd-only",
+            "configurePreset": "simd-only",
+            "displayName": "Build SIMD Only",
+            "description": "Build with only SIMD optimizations"
+        },
+        {
+            "name": "memory-optimized",
+            "configurePreset": "memory-optimized",
+            "displayName": "Build Memory Optimized",
+            "description": "Build with memory optimizations only"
+        },
+        {
+            "name": "cache-only",
+            "configurePreset": "cache-only",
+            "displayName": "Build Cache Optimized",
+            "description": "Build with only cache optimizations"
+        },
+        {
+            "name": "object-pool-only",
+            "configurePreset": "object-pool-only",
+            "displayName": "Build Object Pool Only",
+            "description": "Build with only object pooling"
+        },
+        {
+            "name": "fully-optimized",
+            "configurePreset": "fully-optimized",
+            "displayName": "Build Fully Optimized",
+            "description": "Build with all optimizations enabled"
         }
     ],
     "testPresets": [

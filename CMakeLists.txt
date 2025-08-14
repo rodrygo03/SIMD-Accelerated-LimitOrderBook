@@ -9,11 +9,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # BUILD CONFIGURATION OPTIONS
 # ============================================================================
 
-# Build options
-option(BUILD_SCALAR_BASELINE "Build scalar baseline implementation for benchmarking" ON)
+# Build options (BUILD_SCALAR_BASELINE removed - now handled via templated configurations)
 option(ENABLE_SIMD "Enable SIMD optimizations (AVX2)" ON)
 option(ENABLE_DEBUG_MODE "Enable debug mode and logging" OFF)
 option(ENABLE_VERBOSE_LOGGING "Enable verbose logging output" OFF)
+
+# New optimization toggle options
+option(ENABLE_OBJECT_POOLING "Enable object pooling for memory management" ON)
+option(ENABLE_CACHE_OPTIMIZATION "Enable cache-friendly data structures and alignment" ON)
+option(ENABLE_INTRUSIVE_LISTS "Enable intrusive linked lists for better cache performance" ON)
+option(ENABLE_PREFETCHING "Enable hardware cache prefetching hints" ON)
+option(ENABLE_BRANCH_PREDICTION "Enable branch prediction optimization hints" ON)
 
 # Pool configuration
 set(DEFAULT_POOL_SIZE "1000000" CACHE STRING "Default object pool size")
@@ -64,9 +70,14 @@ endif()
 message(STATUS "SIMD-LOB Build Configuration:")
 message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  SIMD Enabled: ${ENABLE_SIMD}")
-message(STATUS "  Scalar Baseline: ${BUILD_SCALAR_BASELINE}")
+message(STATUS "  Object Pooling: ${ENABLE_OBJECT_POOLING}")
+message(STATUS "  Cache Optimization: ${ENABLE_CACHE_OPTIMIZATION}")
+message(STATUS "  Intrusive Lists: ${ENABLE_INTRUSIVE_LISTS}")
+message(STATUS "  Prefetching: ${ENABLE_PREFETCHING}")
+message(STATUS "  Branch Prediction: ${ENABLE_BRANCH_PREDICTION}")
+message(STATUS "  Templated Configurations: scalar-baseline, simd-only, memory-optimized, etc.")
 message(STATUS "  Pool Size: ${DEFAULT_POOL_SIZE}")
-message(STATUS "  Base Price: ${BASE_PRICE} cents ($${CMAKE_MATCH_0})")
+message(STATUS "  Base Price: ${BASE_PRICE} cents")
 message(STATUS "  Max Price Levels: ${MAX_PRICE_LEVELS}")
 message(STATUS "  Debug Mode: ${ENABLE_DEBUG_MODE}")
 
@@ -108,6 +119,27 @@ if(ENABLE_VERBOSE_LOGGING)
     set(VERBOSE_LOGGING 1)
 endif()
 
+# Set optimization flags for config.h template
+if(ENABLE_OBJECT_POOLING)
+    set(ENABLE_OBJECT_POOLING_FLAG 1)
+endif()
+
+if(ENABLE_CACHE_OPTIMIZATION)
+    set(ENABLE_CACHE_OPTIMIZATION_FLAG 1)
+endif()
+
+if(ENABLE_INTRUSIVE_LISTS)
+    set(ENABLE_INTRUSIVE_LISTS_FLAG 1)
+endif()
+
+if(ENABLE_PREFETCHING)
+    set(ENABLE_PREFETCHING_FLAG 1)
+endif()
+
+if(ENABLE_BRANCH_PREDICTION)
+    set(ENABLE_BRANCH_PREDICTION_FLAG 1)
+endif()
+
 # Generate config.h from template
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
@@ -120,7 +152,7 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
 include_directories(src)
 
-# Core library
+# Core library with configurable optimizations
 add_library(simd_lob STATIC
     src/order.cpp
     src/price_level.cpp
@@ -165,8 +197,6 @@ install(TARGETS simd_lob test_bitset_directory test_order_book test_lob_engine r
 
 install(DIRECTORY src/ DESTINATION include/simd_lob)
 
-# Add scalar implementation for benchmarking 
-option(BUILD_SCALAR_BASELINE "Build scalar baseline implementation" ON)
-if(BUILD_SCALAR_BASELINE)
-    add_subdirectory(bench/scalar)
-endif()
+# Legacy scalar implementation is no longer needed - we now use templated configurations
+# The bench/scalar directory can be removed as all optimization variants are now 
+# available through the templated OrderBook class with different configurations
