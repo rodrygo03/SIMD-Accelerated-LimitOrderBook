@@ -56,6 +56,9 @@ using CacheOptimizedConfig = OptimizationPolicy<false, false, true, false>;
 // Object pool only - memory pooling without other optimizations
 using ObjectPoolOnlyConfig = OptimizationPolicy<false, true, false, false>;
 
+// Object pool + SIMD - combination of the two best performing optimizations
+using ObjectPoolSimdConfig = OptimizationPolicy<true, true, false, false>;
+
 // ============================================================================
 // CONFIGURATION SELECTION BASED ON CMAKE OPTIONS
 // ============================================================================
@@ -168,7 +171,7 @@ struct MemoryTraits {
             #ifdef ENABLE_INTRUSIVE_LISTS
                 using DefaultConfig = OptimizationPolicy<true, true, false, true>;
             #else
-                using DefaultConfig = OptimizationPolicy<true, true, false, false>;
+                using DefaultConfig = ObjectPoolSimdConfig;
             #endif
         #endif
     #else
@@ -272,6 +275,8 @@ struct ConfigDebugInfo {
             return "CacheOptimized";
         } else if constexpr (std::is_same_v<Config, ObjectPoolOnlyConfig>) {
             return "ObjectPoolOnly";
+        } else if constexpr (std::is_same_v<Config, ObjectPoolSimdConfig>) {
+            return "ObjectPoolSimd";
         } else {
             return "Custom";
         }

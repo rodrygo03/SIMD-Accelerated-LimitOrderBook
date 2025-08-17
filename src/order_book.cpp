@@ -22,9 +22,7 @@ OrderBook<Config>::OrderBook(size_t initial_pool_size):
         sell_levels[i] = PriceLevel();
     }
 
-    // Conditionally pre-allocate object pools based on configuration
     if constexpr (Config::USE_OBJECT_POOLING) {
-        // Pre-allocate object pools to avoid malloc/free during trading
         order_pool.preallocate();
         trade_pool.preallocate();
     }
@@ -38,7 +36,6 @@ bool OrderBook<Config>::add_limit_order(uint64_t order_id, Side side, uint32_t p
         return false;
     }
 
-    // Use pre-allocated object from pool (no malloc) or allocate directly
     Order* order;
     if constexpr (Config::USE_OBJECT_POOLING) {
         order = order_pool.acquire();
@@ -78,7 +75,6 @@ bool OrderBook<Config>::cancel_order(uint64_t order_id) {
     remove_order_from_level(order, order->side);
     order_map.erase(it);
     
-    // Release order back to pool or delete directly
     if constexpr (Config::USE_OBJECT_POOLING) {
         order_pool.release(order);
     } 
@@ -493,3 +489,4 @@ template class OrderBook<OptimizationConfig::SimdOnlyConfig>;
 template class OrderBook<OptimizationConfig::MemoryOptimizedConfig>;
 template class OrderBook<OptimizationConfig::CacheOptimizedConfig>;
 template class OrderBook<OptimizationConfig::ObjectPoolOnlyConfig>;
+template class OrderBook<OptimizationConfig::ObjectPoolSimdConfig>;

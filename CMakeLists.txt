@@ -75,7 +75,7 @@ message(STATUS "  Cache Optimization: ${ENABLE_CACHE_OPTIMIZATION}")
 message(STATUS "  Intrusive Lists: ${ENABLE_INTRUSIVE_LISTS}")
 message(STATUS "  Prefetching: ${ENABLE_PREFETCHING}")
 message(STATUS "  Branch Prediction: ${ENABLE_BRANCH_PREDICTION}")
-message(STATUS "  Templated Configurations: scalar-baseline, simd-only, memory-optimized, etc.")
+message(STATUS "  Templated Configurations: scalar-baseline, simd-baseline, memory-optimized, etc.")
 message(STATUS "  Pool Size: ${DEFAULT_POOL_SIZE}")
 message(STATUS "  Base Price: ${BASE_PRICE} cents")
 message(STATUS "  Max Price Levels: ${MAX_PRICE_LEVELS}")
@@ -147,7 +147,7 @@ configure_file(
     @ONLY
 )
 
-# Make generated config.h available to all targets
+# Make generated config.h available to all targets (MUST come first to override src/config.h)
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
 include_directories(src)
@@ -196,6 +196,9 @@ install(TARGETS simd_lob test_bitset_directory test_order_book test_lob_engine r
 )
 
 install(DIRECTORY src/ DESTINATION include/simd_lob)
+
+# Add benchmark subdirectory
+add_subdirectory(benchmark)
 
 # Legacy scalar implementation is no longer needed - we now use templated configurations
 # The bench/scalar directory can be removed as all optimization variants are now 

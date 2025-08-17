@@ -172,10 +172,10 @@
             }
         },
         {
-            "name": "simd-only",
+            "name": "simd-baseline",
             "displayName": "SIMD Only",
             "description": "Only SIMD optimizations enabled, no memory pooling or cache optimization",
-            "binaryDir": "${sourceDir}/build-simd-only",
+            "binaryDir": "${sourceDir}/build-simd-baseline",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "ENABLE_SIMD": "ON",
@@ -272,6 +272,31 @@
             }
         },
         {
+            "name": "object-pool-simd",
+            "displayName": "Object Pool + SIMD",
+            "description": "Combination of object pooling and SIMD optimizations for best performance",
+            "binaryDir": "${sourceDir}/build-object-pool-simd",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_SIMD": "ON",
+                "ENABLE_OBJECT_POOLING": "ON",
+                "ENABLE_CACHE_OPTIMIZATION": "OFF",
+                "ENABLE_INTRUSIVE_LISTS": "OFF",
+                "ENABLE_PREFETCHING": "OFF",
+                "ENABLE_BRANCH_PREDICTION": "OFF",
+                "ENABLE_DEBUG_MODE": "OFF",
+                "ENABLE_VERBOSE_LOGGING": "OFF",
+                "DEFAULT_POOL_SIZE": "1000000",
+                "TRADE_POOL_RATIO": "10",
+                "MAX_PRICE_LEVELS": "4096",
+                "BASE_PRICE": "50000",
+                "MIN_PRICE_TICK": "1",
+                "MAX_MARKET_DEPTH_LEVELS": "10",
+                "BENCHMARK_ITERATIONS": "50000",
+                "WARMUP_ITERATIONS": "5000"
+            }
+        },
+        {
             "name": "fully-optimized",
             "displayName": "Fully Optimized",
             "description": "All optimizations enabled - SIMD, object pooling, cache optimization, intrusive lists",
@@ -347,8 +372,8 @@
             "description": "Build pure STL baseline without optimizations"
         },
         {
-            "name": "simd-only",
-            "configurePreset": "simd-only",
+            "name": "simd-baseline",
+            "configurePreset": "simd-baseline",
             "displayName": "Build SIMD Only",
             "description": "Build with only SIMD optimizations"
         },
@@ -369,6 +394,12 @@
             "configurePreset": "object-pool-only",
             "displayName": "Build Object Pool Only",
             "description": "Build with only object pooling"
+        },
+        {
+            "name": "object-pool-simd",
+            "configurePreset": "object-pool-simd",
+            "displayName": "Build Object Pool + SIMD",
+            "description": "Build with object pooling and SIMD optimizations"
         },
         {
             "name": "fully-optimized",

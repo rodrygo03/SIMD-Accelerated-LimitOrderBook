@@ -125,32 +125,20 @@ uint32_t BitsetDirectory<Config>::find_next_higher_bit(uint32_t from_index) cons
     }
     uint64_t masked_chunk = current_l2 & mask;
     if (masked_chunk != 0) {
-        if constexpr (Config::USE_SIMD) {
-            int next_bit = __builtin_ctzll(masked_chunk);
-            return l1_index * CHUNK_SIZE + next_bit;
-        } else {
-            // Scalar fallback
-            for (uint32_t j = l2_bit + 1; j < L2_BITS; j++) {
-                if (masked_chunk & (1ULL << j)) {
-                    return l1_index * CHUNK_SIZE + j;
-                }
-            }
-        }
+        // Both SIMD and scalar use the same optimized intrinsic for single bit operations
+        // The real SIMD optimization is in bulk scanning (simd_scan_l2_forward)
+        int next_bit = __builtin_ctzll(masked_chunk);
+        return l1_index * CHUNK_SIZE + next_bit;
     }
 
     // *Search higher L1 chunks*
-    for (uint32_t i=l1_index + 1; i<L1_BITS; i++)   {
-        if (l2_bitset[i] != 0) {
-            if constexpr (Config::USE_SIMD) {
+    if constexpr (Config::USE_SIMD) {
+        return simd_scan_l2_forward<true>(l1_index + 1);
+    } else {
+        for (uint32_t i = l1_index + 1; i < L1_BITS; i++) {
+            if (l2_bitset[i] != 0) {
                 int next_bit = __builtin_ctzll(l2_bitset[i]);
                 return i * CHUNK_SIZE + next_bit;
-            } else {
-                // Scalar fallback
-                for (uint32_t j = 0; j < L2_BITS; j++) {
-                    if (l2_bitset[i] & (1ULL << j)) {
-                        return i * CHUNK_SIZE + j;
-                    }
-                }
             }
         }
     }
@@ -171,33 +159,19 @@ uint32_t BitsetDirectory<Config>::find_next_lower_bit(uint32_t from_index) const
     uint64_t masked_chunk = current_l2 & mask;
     if (masked_chunk != 0) {
         // Find highest bit in masked range (next lower bit)
-        if constexpr (Config::USE_SIMD) {
-            int next_bit = 63 - __builtin_clzll(masked_chunk);
-            return l1_index * CHUNK_SIZE + next_bit;
-        } else {
-            // Scalar fallback
-            for (uint32_t j = l2_bit - 1; j != UINT32_MAX; j--) {
-                if (masked_chunk & (1ULL << j)) {
-                    return l1_index * CHUNK_SIZE + j;
-                }
-            }
-        }
+        // Use optimized intrinsic for single bit operations
+        int next_bit = 63 - __builtin_clzll(masked_chunk);
+        return l1_index * CHUNK_SIZE + next_bit;
     }
 
     // Search lower L1 chunks (start from l1_index - 1)
-    for (uint32_t i=l1_index - 1; i!=UINT32_MAX; i--) {
-        if (l2_bitset[i] != 0) {
-            // Find highest bit in this chunk (next lower bit)
-            if constexpr (Config::USE_SIMD) {
+    if constexpr (Config::USE_SIMD) {
+        return simd_scan_l2_backward<true>(l1_index - 1);
+    } else {
+        for (uint32_t i = l1_index - 1; i != UINT32_MAX; i--) {
+            if (l2_bitset[i] != 0) {
                 int next_bit = 63 - __builtin_clzll(l2_bitset[i]);
                 return i * CHUNK_SIZE + next_bit;
-            } else {
-                // Scalar fallback
-                for (uint32_t j = L2_BITS - 1; j != UINT32_MAX; j--) {
-                    if (l2_bitset[i] & (1ULL << j)) {
-                        return i * CHUNK_SIZE + j;
-                    }
-                }
             }
         }
     }
@@ -221,22 +195,51 @@ void BitsetDirectory<Config>::clear_all() {
 template<typename Config>
 template<bool UseSimd>
 std::enable_if_t<UseSimd, uint32_t> BitsetDirectory<Config>::simd_scan_l2_forward(uint32_t start_index) const {
-    // parameter is bit index, need to convert to chunk index
     uint32_t start_chunk = get_l1_index(start_index);
-    uint32_t vec_size = 4; // 256 bit load / 64 bit lane
-    for (uint32_t i=start_chunk; i<L1_BITS; i+=vec_size) {
-        __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[i]); // Unaligned load 4 consecutive L2 bitsets into AVX2 register (x86-64 CISC ISA)
-        __m256i cmp_result = _mm256_cmpeq_epi64(vec, _mm256_setzero_si256()); // Check for non-zero lanes: 0xFFFF...F if lane equals zero
-        int32_t mask = _mm256_movemask_epi8(cmp_result); // MSB of each byte -> 32-bit mask
-
-        if (mask != (int32_t)0xFFFFFFFF) { // At least one lane is non-zero (has data)
-            for (uint32_t j=0; j<vec_size; j++) { // FWD
-                if (i+j < L1_BITS && l2_bitset[i+j] != 0) {
-                    int first_bit = __builtin_ctzll(l2_bitset[i+j]); // Lowest bit
-                    uint32_t found_index = (i + j) * CHUNK_SIZE + first_bit;
-                    // Only return if found bit is after start_index
-                    if (found_index > start_index) {
-                        return found_index;
+    
+    // Align to 4-chunk boundaries for optimal SIMD performance
+    uint32_t aligned_start = (start_chunk + 3) & ~3; // Round up to nearest multiple of 4
+    constexpr uint32_t vec_size = 4; // 256-bit / 64-bit = 4 lanes
+    
+    // Handle any unaligned chunks at the beginning with scalar code
+    for (uint32_t i = start_chunk; i < aligned_start && i < L1_BITS; i++) {
+        if (l2_bitset[i] != 0) {
+            int first_bit = __builtin_ctzll(l2_bitset[i]);
+            uint32_t found_index = i * CHUNK_SIZE + first_bit;
+            if (found_index > start_index) {
+                return found_index;
+            }
+        }
+    }
+    
+    for (uint32_t i = aligned_start; i < L1_BITS; i += vec_size) {
+        // Load 4 consecutive 64-bit chunks (unaligned)
+        __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[i]);
+        
+        // Check for non-zero chunks (inverted comparison)
+        __m256i zero_vec = _mm256_setzero_si256();
+        __m256i cmp_result = _mm256_cmpeq_epi64(vec, zero_vec);
+        uint32_t mask = _mm256_movemask_epi8(cmp_result);
+        
+        // If mask != 0xFFFFFFFF, at least one chunk is non-zero
+        if (mask != 0xFFFFFFFF) {
+            // Convert byte mask to lane mask (each lane is 8 bytes)
+            uint32_t lane_mask = ~mask; // Invert to get non-zero lanes
+            
+            // Process lanes from left to right (ascending order)
+            for (uint32_t j = 0; j < vec_size; j++) {
+                uint32_t lane_byte_offset = j * 8;
+                if ((lane_mask >> lane_byte_offset) & 0xFF) { // Check if lane j is non-zero
+                    uint32_t chunk_idx = i + j;
+                    if (chunk_idx >= L1_BITS) break;
+                    
+                    uint64_t chunk_value = l2_bitset[chunk_idx];
+                    if (chunk_value != 0) {
+                        int first_bit = __builtin_ctzll(chunk_value);
+                        uint32_t found_index = chunk_idx * CHUNK_SIZE + first_bit;
+                        if (found_index > start_index) {
+                            return found_index;
+                        }
                     }
                 }
             }
@@ -250,27 +253,50 @@ template<typename Config>
 template<bool UseSimd>
 std::enable_if_t<UseSimd, uint32_t> BitsetDirectory<Config>::simd_scan_l2_backward(uint32_t start_index) const {
     uint32_t start_chunk = get_l1_index(start_index);
-    uint32_t vec_size = 4;
-    for (uint32_t i=(start_chunk/vec_size)*vec_size; i!=UINT32_MAX; i-=vec_size) { // rounds down to the nearest multiple of 4
-        __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[i]); 
-        __m256i cmp_result = _mm256_cmpeq_epi64(vec, _mm256_setzero_si256());
-        int32_t mask = _mm256_movemask_epi8(cmp_result);
-
-        if (mask != (int32_t)0xFFFFFFFF) { 
-            for (uint32_t j=vec_size-1; j!=UINT32_MAX; j--) {
-                uint32_t chunk_idx = i + j;
-                if (chunk_idx <= start_chunk && chunk_idx < L1_BITS && l2_bitset[chunk_idx] != 0) {
-                    int last_bit = 63 - __builtin_clzll(l2_bitset[chunk_idx]); // Highest bit
-                    uint32_t found_index = chunk_idx * CHUNK_SIZE + last_bit;
-                    // only return bits before start_index
-                    if (found_index < start_index) {
-                        return found_index;
+    constexpr uint32_t vec_size = 4;
+    
+    uint32_t aligned_end = (start_chunk + 1) & ~3; 
+    for (uint32_t i = start_chunk; i > aligned_end && i != UINT32_MAX; i--) {
+        if (l2_bitset[i] != 0) {
+            int last_bit = 63 - __builtin_clzll(l2_bitset[i]);
+            uint32_t found_index = i * CHUNK_SIZE + last_bit;
+            if (found_index < start_index) {
+                return found_index;
+            }
+        }
+    }
+    
+    for (uint32_t i = aligned_end; i != UINT32_MAX; i -= vec_size) {
+        if (i < vec_size) break; // Prevent underflow
+        
+        uint32_t chunk_start = i - vec_size;
+        __m256i vec = _mm256_loadu_si256((const __m256i*)&l2_bitset[chunk_start]);        
+        __m256i zero_vec = _mm256_setzero_si256();
+        __m256i cmp_result = _mm256_cmpeq_epi64(vec, zero_vec);
+        uint32_t mask = _mm256_movemask_epi8(cmp_result);
+        
+        if (mask != 0xFFFFFFFF) {
+            uint32_t lane_mask = ~mask; // Invert to get non-zero lanes
+            
+            for (uint32_t j = vec_size; j > 0; j--) {
+                uint32_t lane_idx = j - 1;
+                uint32_t lane_byte_offset = lane_idx * 8;
+                
+                if ((lane_mask >> lane_byte_offset) & 0xFF) {
+                    uint32_t chunk_idx = chunk_start + lane_idx;
+                    if (chunk_idx >= L1_BITS) continue;
+                    
+                    uint64_t chunk_value = l2_bitset[chunk_idx];
+                    if (chunk_value != 0) {
+                        int last_bit = 63 - __builtin_clzll(chunk_value);
+                        uint32_t found_index = chunk_idx * CHUNK_SIZE + last_bit;
+                        if (found_index < start_index) {
+                            return found_index;
+                        }
                     }
                 }
             }
         }
-        
-        if (i < vec_size) break; // Prevent underflow
     }
     
     return MAX_PRICE_LEVELS;
@@ -356,3 +382,4 @@ template class BitsetDirectory<OptimizationConfig::SimdOnlyConfig>;
 template class BitsetDirectory<OptimizationConfig::MemoryOptimizedConfig>;
 template class BitsetDirectory<OptimizationConfig::CacheOptimizedConfig>;
 template class BitsetDirectory<OptimizationConfig::ObjectPoolOnlyConfig>;
+template class BitsetDirectory<OptimizationConfig::ObjectPoolSimdConfig>;

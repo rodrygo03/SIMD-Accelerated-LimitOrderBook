@@ -9,3 +9,7 @@ test_scalar
 
 # cmake generated 
 config.h.in 
+
+# benchmarks
+data/
+results/
