@@ -8,8 +8,12 @@ build*/
 test_scalar 
 
 # cmake generated 
-config.h.in 
+config.h.old
 
 # benchmarks
 data/
 results/
+# debugging benchmarks
+profiling_results/
+venv/
+*.csv
